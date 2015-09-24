@@ -1,8 +1,9 @@
+import CUBLAS: BlasChar, cublasfill, cublasop, cublasside, cublasFillMode_t, cublasOperation_t, cublasSideMode_t
+import CUSPARSE: cusparseMatDescr_t, CudaSparseMatrixCSR, SparseChar, cusparseindex
+import CUSPARSE: CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT
+
 #enum cusolverStatus_t
 #error messages from CUSOLVER
-
-import CUBLAS: BlasChar, cublasfill, cublasop, cublasside, cublasFillMode_t, cublasOperation_t, cublasSideMode_t
-import CUSPARSE: cusparseMatDescr_t
 
 typealias cusolverStatus_t UInt32
 const CUSOLVER_STATUS_SUCCESS                   = 0

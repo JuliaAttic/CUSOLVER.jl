@@ -51,9 +51,14 @@ cusolverDnCreate( cusolverDnhandle )
 cusolverSphandle = cusolverSpHandle_t[0]
 cusolverSpCreate( cusolverSphandle )
 
+function cusolverDestroy()
+    cusolverDnDestroy(cusolverDnhandle[1])
+    cusolverSpDestroy(cusolverSphandle[1])
+end
 #clean up handle at exit
-atexit( ()->cusolverDnDestroy(cusolverDnhandle[1]) )
+atexit( ()->cusparseDestroy() )
 
 include("dense.jl")
+include("sparse.jl")
 
 end
