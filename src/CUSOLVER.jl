@@ -46,17 +46,17 @@ include("libcusolver.jl")
 
 #setup handler for cusolver
 
-cusolverDnhandle = cusolverDnHandle_t[0]
-cusolverDnCreate( cusolverDnhandle )
 cusolverSphandle = cusolverSpHandle_t[0]
 cusolverSpCreate( cusolverSphandle )
+cusolverDnhandle = cusolverDnHandle_t[0]
+cusolverDnCreate( cusolverDnhandle )
 
 function cusolverDestroy()
-    cusolverDnDestroy(cusolverDnhandle[1])
     cusolverSpDestroy(cusolverSphandle[1])
+    cusolverDnDestroy(cusolverDnhandle[1])
 end
 #clean up handle at exit
-atexit( ()->cusparseDestroy() )
+atexit( ()->cusolverDestroy() )
 
 include("dense.jl")
 include("sparse.jl")

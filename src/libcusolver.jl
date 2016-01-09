@@ -25,6 +25,12 @@ end
 function cusolverSpGetStream(handle, streamId)
   statuscheck(ccall( (:cusolverSpGetStream, libcusolver), cusolverStatus_t, (cusolverSpHandle_t, Ptr{cudaStream_t}), handle, streamId))
 end
+function cusolverSpCreateCsrqrInfo(info)
+  statuscheck(ccall( (:cusolverSpCreateCsrqrInfo, libcusolver), cusolverStatus_t, (Ptr{csrqrInfo_t},), info))
+end
+function cusolverSpDestroyCsrqrInfoInfo(info)
+  statuscheck(ccall( (:cusolverDestroyCsrqrInfo, libcusolver), cusolverStatus_t, (csrqrInfo_t,), info))
+end
 function cusolverRfCreate(handle)
   statuscheck(ccall( (:cusolverRfCreate, libcusolver), cusolverStatus_t, (Ptr{cusolverRfHandle_t},), handle))
 end

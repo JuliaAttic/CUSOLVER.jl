@@ -1,3 +1,22 @@
+#csrissymHost 
+function issym(A::SparseMatrixCSC, inda::SparseChar='O')
+    cuinda = cusparseindex(inda)
+    m = size(A,1)
+    if size(A,2) != m
+        throw(DimensionMismatch("issym is only possible for square matrices!"))
+    end
+    issym = Ref{Cint}(0)
+    cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+    endPtr = convert(Vector{Cint},A.colptr[2:end] - 1)
+    println("\t",endPtr, " ", length(A.nzval), " ", m, " ",length(A.rowval))
+    statuscheck(ccall((:cusolverSpXcsrissymHost,libcusolver), cusolverStatus_t,
+                      (cusolverSpHandle_t, Cint, Cint, cusparseMatDescr_t,
+                       Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}),
+                      cusolverSphandle[1], m, length(A.nzval), cudesca, convert(Vector{Cint},A.colptr),
+                      endPtr, convert(Vector{Cint},A.rowval), issym))
+    return issym == 1
+end
+
 #csrlsvlu 
 for (fname, elty, relty) in ((:cusolverSpScsrlsvluHost, :Float32, :Float32),
                              (:cusolverSpDcsrlsvluHost, :Float64, :Float64),
@@ -33,10 +52,10 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvluHost, :Float32, :Float32),
 end
 
 #csrlsvqr 
-for (fname, elty, relty) in ((:cusolverSpScsrlsvqrHost, :Float32, :Float32),
-                             (:cusolverSpDcsrlsvqrHost, :Float64, :Float64),
-                             (:cusolverSpCcsrlsvqrHost, :Complex64, :Float32),
-                             (:cusolverSpZcsrlsvqrHost, :Complex128, Float64))
+for (fname, elty, relty) in ((:cusolverSpScsrlsvqr, :Float32, :Float32),
+                             (:cusolverSpDcsrlsvqr, :Float64, :Float64),
+                             (:cusolverSpCcsrlsvqr, :Complex64, :Float32),
+                             (:cusolverSpZcsrlsvqr, :Complex128, Float64))
     @eval begin
         function csrlsvqr!(A::CudaSparseMatrixCSR{$elty},
                            b::CudaVector{$elty},
@@ -49,9 +68,8 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvqrHost, :Float32, :Float32),
             if size(A,2) != n
                 throw(DimensionMismatch("QR factorization is only possible for square matrices!"))
             end
-
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
-            singularity = zeros(Cint,1)
+            singularity = Array(Cint,1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint, cusparseMatDescr_t,
                                Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
@@ -139,10 +157,10 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsqvqrHost, :Float32, :Float32),
 end
 
 #csreigvsi 
-for (fname, elty, relty) in ((:cusolverSpScsreigvsiHost, :Float32, :Float32),
-                             (:cusolverSpDcsreigvsiHost, :Float64, :Float64),
-                             (:cusolverSpCcsreigvsiHost, :Complex64, :Float32),
-                             (:cusolverSpZcsreigvsiHost, :Complex128, Float64))
+for (fname, elty, relty) in ((:cusolverSpScsreigvsi, :Float32, :Float32),
+                             (:cusolverSpDcsreigvsi, :Float64, :Float64),
+                             (:cusolverSpCcsreigvsi, :Complex64, :Float32),
+                             (:cusolverSpZcsreigvsi, :Complex128, Float64))
     @eval begin
         function csreigvsi(A::CudaSparseMatrixCSR{$elty},
                            μ_0::$elty,
@@ -158,19 +176,20 @@ for (fname, elty, relty) in ((:cusolverSpScsreigvsiHost, :Float32, :Float32),
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
             x = copy(x_0) 
             μ = CudaArray(zeros($elty,1)) 
+            println($(string(fname)))
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint,
                                cusparseMatDescr_t, Ptr{$elty}, Ptr{Cint},
                                Ptr{Cint}, $elty, Ptr{$elty}, Cint,
                                $relty, Ptr{$elty}, Ptr{$elty}),
                               cusolverSphandle[1], n, A.nnz, cudesca, A.nzVal,
-                              A.rowPtr, A.colVal, μ_0, x_0, maxite, tol, mu, x))
+                              A.rowPtr, A.colVal, μ_0, x_0, maxite, tol, μ, x))
             μ[1], x
         end
     end
 end
 
-#csreigsi 
+#csreigs
 for (fname, elty, relty) in ((:cusolverSpScsreigsHost, :Complex64, :Float32),
                              (:cusolverSpDcsreigsHost, :Complex128, :Float64),
                              (:cusolverSpCcsreigsHost, :Complex64, :Complex64),

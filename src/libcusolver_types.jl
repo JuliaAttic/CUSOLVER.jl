@@ -15,6 +15,8 @@ const CUSOLVER_STATUS_EXECUTION_FAILED          = 5
 const CUSOLVER_STATUS_INTERNAL_ERROR            = 6
 const CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED = 7
 
+typealias csrqrInfo_t Ptr{Void}
+
 # refactorization types
 
 typealias cusolverRfNumericBoostReport_t UInt32
