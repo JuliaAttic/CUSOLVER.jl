@@ -10,7 +10,7 @@ The dense CUSOLVER API is designed to mimic the LAPACK API. I've tried to achiev
 
 ## Current Features
 
-`CUSOLVER.jl` currently supports a subset of all the CUSPARSE functionality. What is implemented right now:
+`CUSOLVER.jl` currently supports a subset of all the CUSOLVER functionality. What is implemented right now:
 - [x] Dense API
     - [x] Dense Linear Solvers
         - [x] potrf!
@@ -24,13 +24,13 @@ The dense CUSOLVER API is designed to mimic the LAPACK API. I've tried to achiev
         - [x] gebrd!
         - [x] gesvd!
 - [x] Sparse API
-    - [ ] High level API
-        - [ ] csrlsvlu!
-        - [ ] csrlsvqr!
-        - [ ] csrlsvchol!
-        - [ ] csrlsqvqr!
-        - [ ] csreigvsi!
-        - [ ] csreigs!
+    - [x] High level API
+        - [x] csrlsvlu!
+        - [x] csrlsvqr!
+        - [x] csrlsvchol!
+        - [x] csrlsqvqr!
+        - [x] csreigvsi!
+        - [x] csreigs!
     - [ ] Low level API
         - [ ] csrsymrcm!
         - [ ] csrsymmdq!
