@@ -46,7 +46,7 @@ function test_getrf!(elty)
     d_A,d_ipiv = CUSOLVER.getrf!(d_A)
     h_A        = to_host(d_A)
     h_ipiv     = to_host(d_ipiv)
-    alu        = Base.LinAlg.LU(h_A, convert(Vector{Int},h_ipiv), 0)
+    alu        = Base.LinAlg.LU(h_A, convert(Vector{Int},h_ipiv), zero(Int))
     @test A ≈ full(alu)
 end
 

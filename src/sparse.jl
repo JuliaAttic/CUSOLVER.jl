@@ -1,31 +1,12 @@
-#csrissymHost 
-function issym(A::SparseMatrixCSC, inda::SparseChar='O')
-    cuinda = cusparseindex(inda)
-    m = size(A,1)
-    if size(A,2) != m
-        throw(DimensionMismatch("issym is only possible for square matrices!"))
-    end
-    issym = Ref{Cint}(0)
-    cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
-    endPtr = convert(Vector{Cint},A.colptr[2:end] - 1)
-    println("\t",endPtr, " ", length(A.nzval), " ", m, " ",length(A.rowval))
-    statuscheck(ccall((:cusolverSpXcsrissymHost,libcusolver), cusolverStatus_t,
-                      (cusolverSpHandle_t, Cint, Cint, cusparseMatDescr_t,
-                       Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}),
-                      cusolverSphandle[1], m, length(A.nzval), cudesca, convert(Vector{Cint},A.colptr),
-                      endPtr, convert(Vector{Cint},A.rowval), issym))
-    return issym == 1
-end
-
 #csrlsvlu 
 for (fname, elty, relty) in ((:cusolverSpScsrlsvluHost, :Float32, :Float32),
                              (:cusolverSpDcsrlsvluHost, :Float64, :Float64),
                              (:cusolverSpCcsrlsvluHost, :Complex64, :Float32),
                              (:cusolverSpZcsrlsvluHost, :Complex128, Float64))
     @eval begin
-        function csrlsvlu!(A::CudaSparseMatrixCSR{$elty},
-                           b::CudaVector{$elty},
-                           x::CudaVector{$elty},
+        function csrlsvlu!(A::SparseMatrixCSC{$elty},
+                           b::Vector{$elty},
+                           x::Vector{$elty},
                            tol::$relty,
                            reorder::Cint,
                            inda::SparseChar)
@@ -34,15 +15,18 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvluHost, :Float32, :Float32),
             if size(A,2) != n
                 throw(DimensionMismatch("LU factorization is only possible for square matrices!"))
             end
-
+            Mat = transpose(A)
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
             singularity = zeros(Cint,1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
-                              (cusolverSpHandle_t, Cint, Cint, cusparseMatDescr_t,
-                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
-                               $relty, Cint, Ptr{$elty}, Ptr{Cint}),
-                              cusolverSphandle[1], n, A.nnz, cudesca, A.nzVal,
-                              A.rowPtr, A.colVal, b, tol, reorder, x, singularity))
+                              (cusolverSpHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Ptr{$elty}, $relty, Cint, Ptr{$elty},
+                               Ptr{Cint}),
+                              cusolverSphandle[1], n, length(A.nzval), &cudesca,
+                              Mat.nzval, convert(Vector{Cint},Mat.colptr),
+                              convert(Vector{Cint},Mat.rowval), b, tol, reorder,
+                              x, singularity))
             if singularity[1] != -1
                 throw(Base.LinAlg.SingularException(singularity[1]))
             end
@@ -71,10 +55,11 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvqr, :Float32, :Float32),
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
             singularity = Array(Cint,1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
-                              (cusolverSpHandle_t, Cint, Cint, cusparseMatDescr_t,
-                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
-                               $relty, Cint, Ptr{$elty}, Ptr{Cint}),
-                              cusolverSphandle[1], n, A.nnz, cudesca, A.nzVal,
+                              (cusolverSpHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Ptr{$elty}, $relty, Cint, Ptr{$elty},
+                               Ptr{Cint}),
+                              cusolverSphandle[1], n, A.nnz, &cudesca, A.nzVal,
                               A.rowPtr, A.colVal, b, tol, reorder, x, singularity))
             if singularity[1] != -1
                 throw(Base.LinAlg.SingularException(singularity[1]))
@@ -85,19 +70,19 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvqr, :Float32, :Float32),
 end
 
 #csrlsvchol
-for (fname, elty, relty) in ((:cusolverSpScsrlsvcholHost, :Float32, :Float32),
-                             (:cusolverSpDcsrlsvcholHost, :Float64, :Float64),
-                             (:cusolverSpCcsrlsvcholHost, :Complex64, :Float32),
-                             (:cusolverSpZcsrlsvcholHost, :Complex128, Float64))
+for (fname, elty, relty) in ((:cusolverSpScsrlsvchol, :Float32, :Float32),
+                             (:cusolverSpDcsrlsvchol, :Float64, :Float64),
+                             (:cusolverSpCcsrlsvchol, :Complex64, :Float32),
+                             (:cusolverSpZcsrlsvchol, :Complex128, Float64))
     @eval begin
         function csrlsvchol!(A::CudaSparseMatrixCSR{$elty},
-                           b::CudaVector{$elty},
-                           x::CudaVector{$elty},
-                           tol::$relty,
-                           reorder::Cint,
-                           inda::SparseChar)
+                             b::CudaVector{$elty},
+                             x::CudaVector{$elty},
+                             tol::$relty,
+                             reorder::Cint,
+                             inda::SparseChar)
             cuinda = cusparseindex(inda)
-            n = size(A,1)
+            n      = size(A,1)
             if size(A,2) != n
                 throw(DimensionMismatch("Cholesky factorization is only possible for square matrices!"))
             end
@@ -108,13 +93,14 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvcholHost, :Float32, :Float32),
                 throw(DimensionMismatch("dimensions of A, $n, and x, $(length(x)), must match."))
             end
 
-            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+            cudesca     = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
             singularity = zeros(Cint,1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
-                              (cusolverSpHandle_t, Cint, Cint, cusparseMatDescr_t,
-                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
-                               $relty, Cint, Ptr{$elty}, Ptr{Cint}),
-                              cusolverSphandle[1], n, A.nnz, cudesca, A.nzVal,
+                              (cusolverSpHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Ptr{$elty}, $relty, Cint, Ptr{$elty},
+                               Ptr{Cint}),
+                              cusolverSphandle[1], n, A.nnz, &cudesca, A.nzVal,
                               A.rowPtr, A.colVal, b, tol, reorder, x, singularity))
             if singularity[1] != -1
                 throw(Base.LinAlg.SingularException(singularity[1]))
@@ -136,20 +122,20 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsqvqrHost, :Float32, :Float32),
                             tol::$relty,
                             inda::SparseChar)
             cuinda = cusparseindex(inda)
-            m,n = size(A)
+            m,n    = size(A)
             if m < n
                 throw(ArgumentError("csrlsqvqr only works when the first dimension of A, $m, is greater than or equal to the second dimension of A, $n"))
             end
-            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
-            p = CudaArray(zeros(Cint,n))
+            cudesca  = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+            p        = CudaArray(zeros(Cint,n))
             min_norm = zeros($relty,1)
-            rankA = zeros(Cint,1)
+            rankA    = zeros(Cint,1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint, Cint,
-                               cusparseMatDescr_t, Ptr{$elty}, Ptr{Cint},
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
                                Ptr{Cint}, Ptr{$elty}, $relty, Ptr{Cint},
                                Ptr{$elty}, Ptr{Cint}, Ptr{$relty}),
-                              cusolverSphandle[1], m, n, A.nnz, cudesca, A.nzVal,
+                              cusolverSphandle[1], m, n, A.nnz, &cudesca, A.nzVal,
                               A.rowPtr, A.colVal, b, tol, rankA, x, p, min_norm))
             x, rankA[1], p, min_norm[1]
         end
@@ -169,22 +155,21 @@ for (fname, elty, relty) in ((:cusolverSpScsreigvsi, :Float32, :Float32),
                            maxite::Cint,
                            inda::SparseChar)
             cuinda = cusparseindex(inda)
-            m,n = size(A)
+            m,n    = size(A)
             if m != n
                 throw(DimensionMismatch("A must be square!"))
             end
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
-            x = copy(x_0) 
-            μ = CudaArray(zeros($elty,1)) 
-            println($(string(fname)))
+            x       = copy(x_0) 
+            μ       = CudaArray(zeros($elty,1)) 
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint,
-                               cusparseMatDescr_t, Ptr{$elty}, Ptr{Cint},
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
                                Ptr{Cint}, $elty, Ptr{$elty}, Cint,
                                $relty, Ptr{$elty}, Ptr{$elty}),
-                              cusolverSphandle[1], n, A.nnz, cudesca, A.nzVal,
+                              cusolverSphandle[1], n, A.nnz, &cudesca, A.nzVal,
                               A.rowPtr, A.colVal, μ_0, x_0, maxite, tol, μ, x))
-            μ[1], x
+            to_host(μ)[1], x
         end
     end
 end
@@ -200,7 +185,7 @@ for (fname, elty, relty) in ((:cusolverSpScsreigsHost, :Complex64, :Float32),
                          ruc::$elty,
                          inda::SparseChar)
             cuinda = cusparseindex(inda)
-            m,n = size(A)
+            m,n    = size(A)
             if m != n
                 throw(DimensionMismatch("A must be square!"))
             end
@@ -208,9 +193,9 @@ for (fname, elty, relty) in ((:cusolverSpScsreigsHost, :Complex64, :Float32),
             numeigs = zeros(Cint,1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint,
-                               cusparseMatDescr_t, Ptr{$relty}, Ptr{Cint},
+                               Ptr{cusparseMatDescr_t}, Ptr{$relty}, Ptr{Cint},
                                Ptr{Cint}, $elty, $elty, Ptr{Cint}),
-                              cusolverSphandle[1], n, A.nnz, cudesca, A.nzVal,
+                              cusolverSphandle[1], n, A.nnz, &cudesca, A.nzVal,
                               A.rowPtr, A.colVal, lbc, ruc, numeigs))
             numeigs[1]
         end

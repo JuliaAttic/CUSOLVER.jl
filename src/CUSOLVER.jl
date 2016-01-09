@@ -58,7 +58,7 @@ end
 #clean up handle at exit
 atexit( ()->cusolverDestroy() )
 
-include("dense.jl")
 include("sparse.jl")
+include("dense.jl")
 
 end
