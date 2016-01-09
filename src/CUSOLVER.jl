@@ -7,6 +7,15 @@ import Base.zero
 
 include("libcusolver_types.jl")
 
+immutable CUSOLVERError <: Exception
+    msg::AbstractString
+    status::UInt32
+    
+    function CUSOLVERError(status)
+        new(status,statusmessage(status))
+    end
+end
+
 function statusmessage( status )
     if status == CUSOLVER_STATUS_SUCCESS
         return "cusolver success"
@@ -34,7 +43,7 @@ function statuscheck( status )
     warn("CUSOLVER error triggered from:")
     Base.show_backtrace(STDOUT, backtrace())
     println()
-    throw(statusmessage( status ))
+    throw(CUSOLVERError( status ))
 end
 
 const libcusolver = Libdl.find_library(["libcusolver"],["/usr/local/cuda"])

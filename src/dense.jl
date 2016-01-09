@@ -97,8 +97,6 @@ for (bname, fname,elty) in ((:cusolverDnSgeqrf_bufferSize, :cusolverDnSgeqrf, :F
             info = to_host(devinfo)
             if info[1] < 0
                 throw(ArgumentError("The $(info[1])th parameter is wrong"))
-            elseif info[1] > 0
-                throw(Base.LinAlg.SingularException(info[1]))
             end
             A, devtau
         end
@@ -252,8 +250,6 @@ for (bname, fname,elty) in ((:cusolverDnSgeqrf_bufferSize, :cusolverDnSormqr, :F
             info = to_host(devinfo)
             if info[1] < 0
                 throw(ArgumentError("The $(info[1])th parameter is wrong"))
-            elseif info[1] > 0
-                throw(Base.LinAlg.SingularException(info[1]))
             end
             C
         end

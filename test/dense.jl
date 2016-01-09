@@ -18,6 +18,12 @@ function test_potrf!(elty)
     h_A  = to_host(d_A)
     cA,_ = LAPACK.potrf!('U',A)
     @test h_A ≈ cA
+    A    = rand(elty,m,n)
+    d_A  = CudaArray(A)
+    @test_throws DimensionMismatch CUSOLVER.potrf!('U',d_A)
+    A    = zeros(elty,n,n)
+    d_A  = CudaArray(A)
+    @test_throws Base.LinAlg.SingularException CUSOLVER.potrf!('U',d_A)
 end
 
 ##############
@@ -34,6 +40,14 @@ function test_potrs!(elty)
     d_B   = CUSOLVER.potrs!('U',d_A,d_B)
     h_B   = to_host(d_B)
     @test h_B ≈ LAPACK.potrs!('U',h_A,B)
+    A    = rand(elty,m,n)
+    d_A  = CudaArray(A)
+    @test_throws DimensionMismatch CUSOLVER.potrs!('U',d_A,d_B)
+    A    = rand(elty,n,n)
+    d_A  = CudaArray(A)
+    B     = rand(elty,m,m)
+    d_B   = CudaArray(B)
+    @test_throws DimensionMismatch CUSOLVER.potrs!('U',d_A,d_B)
 end
 
 ##############
@@ -48,6 +62,9 @@ function test_getrf!(elty)
     h_ipiv     = to_host(d_ipiv)
     alu        = Base.LinAlg.LU(h_A, convert(Vector{Int},h_ipiv), zero(Int))
     @test A ≈ full(alu)
+    A    = zeros(elty,n,n)
+    d_A  = CudaArray(A)
+    @test_throws Base.LinAlg.SingularException CUSOLVER.getrf!(d_A)
 end
 
 ##############
@@ -62,6 +79,14 @@ function test_getrs!(elty)
     d_B        = CUSOLVER.getrs!('N',d_A,d_ipiv,d_B)
     h_B        = to_host(d_B)
     @test h_B ≈ A\B
+    A          = rand(elty,m,n)
+    d_A        = CudaArray(A)
+    @test_throws DimensionMismatch CUSOLVER.getrs!('N',d_A,d_ipiv,d_B)
+    A          = rand(elty,n,n)
+    d_A        = CudaArray(A)
+    B          = rand(elty,m,n)
+    d_B        = CudaArray(B)
+    @test_throws DimensionMismatch CUSOLVER.getrs!('N',d_A,d_ipiv,d_B)
 end
 
 ##############
@@ -108,6 +133,12 @@ function test_sytrf!(elty)
     A, ipiv    = LAPACK.sytrf!('U',A)
     @test ipiv == h_ipiv 
     @test A ≈ h_A 
+    A    = rand(elty,m,n)
+    d_A  = CudaArray(A)
+    @test_throws DimensionMismatch CUSOLVER.sytrf!('U',d_A)
+    A    = zeros(elty,n,n)
+    d_A  = CudaArray(A)
+    @test_throws Base.LinAlg.SingularException CUSOLVER.sytrf!('U',d_A)
 end
 
 ##############
