@@ -116,9 +116,9 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsqvqrHost, :Float32, :Float32),
                              (:cusolverSpCcsrlsqvqrHost, :Complex64, :Float32),
                              (:cusolverSpZcsrlsqvqrHost, :Complex128, Float64))
     @eval begin
-        function csrlsqvqr!(A::CudaSparseMatrixCSR{$elty},
-                            b::CudaVector{$elty},
-                            x::CudaVector{$elty},
+        function csrlsqvqr!(A::SparseMatrixCSC{$elty},
+                            b::Vector{$elty},
+                            x::Vector{$elty},
                             tol::$relty,
                             inda::SparseChar)
             cuinda = cusparseindex(inda)
@@ -127,16 +127,19 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsqvqrHost, :Float32, :Float32),
                 throw(ArgumentError("csrlsqvqr only works when the first dimension of A, $m, is greater than or equal to the second dimension of A, $n"))
             end
             cudesca  = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
-            p        = CudaArray(zeros(Cint,n))
+            p        = zeros(Cint,n)
             min_norm = zeros($relty,1)
             rankA    = zeros(Cint,1)
+            Mat      = transpose(A)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
                                Ptr{Cint}, Ptr{$elty}, $relty, Ptr{Cint},
                                Ptr{$elty}, Ptr{Cint}, Ptr{$relty}),
-                              cusolverSphandle[1], m, n, A.nnz, &cudesca, A.nzVal,
-                              A.rowPtr, A.colVal, b, tol, rankA, x, p, min_norm))
+                              cusolverSphandle[1], m, n, length(A.nzval),
+                              &cudesca, Mat.nzval, convert(Vector{Cint},Mat.colptr),
+                              convert(Vector{Cint},Mat.rowval), b,
+                              tol, rankA, x, p, min_norm))
             x, rankA[1], p, min_norm[1]
         end
     end
@@ -180,7 +183,7 @@ for (fname, elty, relty) in ((:cusolverSpScsreigsHost, :Complex64, :Float32),
                              (:cusolverSpCcsreigsHost, :Complex64, :Complex64),
                              (:cusolverSpZcsreigsHost, :Complex128, :Complex128))
     @eval begin
-        function csreigs(A::CudaSparseMatrixCSR{$relty},
+        function csreigs(A::SparseMatrixCSC{$relty},
                          lbc::$elty,
                          ruc::$elty,
                          inda::SparseChar)
@@ -191,12 +194,14 @@ for (fname, elty, relty) in ((:cusolverSpScsreigsHost, :Complex64, :Float32),
             end
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
             numeigs = zeros(Cint,1)
+            Mat     = A.'
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$relty}, Ptr{Cint},
                                Ptr{Cint}, $elty, $elty, Ptr{Cint}),
-                              cusolverSphandle[1], n, A.nnz, &cudesca, A.nzVal,
-                              A.rowPtr, A.colVal, lbc, ruc, numeigs))
+                              cusolverSphandle[1], n, length(A.nzval), &cudesca,
+                              Mat.nzval, convert(Vector{Cint},Mat.colptr),
+                              convert(Vector{Cint},Mat.rowval), lbc, ruc, numeigs))
             numeigs[1]
         end
     end

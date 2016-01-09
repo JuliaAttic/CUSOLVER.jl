@@ -28,7 +28,7 @@ end
 function cusolverSpCreateCsrqrInfo(info)
   statuscheck(ccall( (:cusolverSpCreateCsrqrInfo, libcusolver), cusolverStatus_t, (Ptr{csrqrInfo_t},), info))
 end
-function cusolverSpDestroyCsrqrInfoInfo(info)
+function cusolverSpDestroyCsrqrInfo(info)
   statuscheck(ccall( (:cusolverDestroyCsrqrInfo, libcusolver), cusolverStatus_t, (csrqrInfo_t,), info))
 end
 function cusolverRfCreate(handle)

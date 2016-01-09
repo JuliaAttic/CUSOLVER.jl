@@ -11,15 +11,22 @@ n = 10
 # test_csrlsvlu! #
 ##################
 function test_csrlsvlu!(elty)
-    A     = sparse(rand(elty,n,n))
-    #d_A   = CudaSparseMatrixCSR(A)
-    b     = rand(elty,n)
-    #d_b   = CudaArray(b)
-    x     = zeros(elty,n)
-    #d_x   = CudaArray(x)
-    x     = CUSOLVER.csrlsvlu!(A,b,x,convert(real(elty),1e-6),convert(Cint,1),'O')
-    #h_x   = to_host(d_x)
+    A = sparse(rand(elty,n,n))
+    b = rand(elty,n)
+    x = zeros(elty,n)
+    x = CUSOLVER.csrlsvlu!(A,b,x,convert(real(elty),1e-6),convert(Cint,1),'O')
     @test x ≈ full(A)\b
+end
+
+###################
+# test_csrlsqvqr! #
+###################
+function test_csrlsqvqr!(elty)
+    A = sparse(rand(elty,n,n))
+    b = rand(elty,n)
+    x = zeros(elty,n)
+    x = CUSOLVER.csrlsqvqr!(A,b,x,convert(real(elty),1e-4),'O')
+    @test x[1] ≈ full(A)\b
 end
 
 ##################
@@ -66,11 +73,22 @@ function test_csreigvsi(elty)
     @test μ ≈ evs[1]
 end
 
+################
+# test_csreigs #
+################
+function test_csreigs(elty)
+    A   = rand(real(elty),n,n)
+    A   = sparse(A + A')
+    num = CUSOLVER.csreigs(A,convert(elty,complex(-100,-100)),convert(elty,complex(100,100)),'O')
+    @test num <= n
+end
+
 types = [Float32, Float64, Complex64, Complex128]
-#rtypes = [Float32, Float64, Float32, Float64]
 for elty in types
     test_csreigvsi(elty)
+    test_csreigs(complex(elty))
     test_csrlsvlu!(elty)
     test_csrlsvchol!(elty)
     test_csrlsvqr!(elty)
+    test_csrlsqvqr!(elty)
 end
