@@ -10,7 +10,7 @@ include("libcusolver_types.jl")
 immutable CUSOLVERError <: Exception
     msg::AbstractString
     status::UInt32
-    
+
     function CUSOLVERError(status)
         new(status,statusmessage(status))
     end
@@ -46,9 +46,11 @@ function statuscheck( status )
     throw(CUSOLVERError( status ))
 end
 
-const libcusolver = Libdl.find_library(["libcusolver"],["/usr/local/cuda"])
+cuda_versions = ["80", "75", "70", "65"]
+lib_list = vcat(["libcusolver", "cusolver"], "cusolver64_" .* cuda_versions, "cusolver32_" .* cuda_versions)
+const libcusolver = Libdl.find_library(lib_list, ["/usr/local/cuda", "/usr/lib", ""])
 if isempty(libcusolver)
-    error("CUSOLVER library not found in /usr/local/cuda!")
+    error("CUSOLVER library not found!")
 end
 
 include("libcusolver.jl")

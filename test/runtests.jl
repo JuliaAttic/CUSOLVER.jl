@@ -1,5 +1,9 @@
 using CUSOLVER
 using Base.Test
 
-include("dense.jl")
-include("sparse.jl")
+@testset "dense" begin
+    include("dense.jl")
+end
+@testset "sparse" begin
+    include("sparse.jl")
+end
