@@ -137,11 +137,18 @@ function test_csreigs(elty)
 end
 
 types = [Float32, Float64, Complex64, Complex128]
-for elty in types
-    test_csreigvsi(elty)
-    test_csreigs(complex(elty))
-    test_csrlsvlu!(elty)
-    test_csrlsvchol!(elty)
-    test_csrlsvqr!(elty)
-    test_csrlsqvqr!(elty)
+@testset for test_func in [
+        test_csreigvsi,
+        test_csrlsvlu!,
+        test_csrlsvchol!,
+        test_csrlsvqr!,
+        test_csrlsqvqr!]
+    @testset for elty in types
+        test_func(elty)
+    end
+end
+@testset "csreigs" begin
+    @testset for elty in types
+        test_csreigs(complex(elty))
+    end
 end

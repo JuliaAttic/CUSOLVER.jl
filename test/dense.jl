@@ -153,12 +153,12 @@ function test_gebrd!(elty)
     h_E                           = to_host(d_E)
     h_TAUQ                        = to_host(d_TAUQ)
     h_TAUP                        = to_host(d_TAUP)
-    A,d,e,q,p                     = LAPACK.gebrd!(A)
+    A,d,e_,q,p                    = LAPACK.gebrd!(A)
     #@test A ≈ h_A
-    @test d ≈ h_D
-    @test e ≈ h_E
-    @test q ≈ h_TAUQ
-    @test p ≈ h_TAUP
+    @test d  ≈ h_D
+    @test e_ ≈ h_E
+    @test q  ≈ h_TAUQ
+    @test p  ≈ h_TAUP
 end
 
 ##############
@@ -178,14 +178,17 @@ function test_gesvd!(elty)
 end
 
 types = [Float32, Float64, Complex64, Complex128]
-for elty in types
-    test_potrf!(elty)
-    test_potrs!(elty)
-    test_getrf!(elty)
-    test_getrs!(elty)
-    test_geqrf!(elty)
-    test_ormqr!(elty)
-    test_sytrf!(elty)
-    test_gebrd!(elty)
-    test_gesvd!(elty)
+@testset for test_func in [
+    test_potrf!,
+    test_potrs!,
+    test_getrf!,
+    test_getrs!,
+    test_geqrf!,
+    test_ormqr!,
+    test_sytrf!,
+    test_gebrd!,
+    test_gesvd!]
+    @testset for elty in types
+        test_func(elty)
+    end
 end
