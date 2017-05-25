@@ -1,6 +1,7 @@
 module CUSOLVER
 
 using CUDArt
+using CUDArt.rt.cudaStream_t
 
 import Base.one
 import Base.zero

@@ -65,7 +65,7 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvqr, :Float32, :Float32),
                 throw(DimensionMismatch("length of x, $(length(x)), must match the length of b, $(length(b))"))
             end
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
-            singularity = Array(Cint,1)
+            singularity = Array{Cint}(1)
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
