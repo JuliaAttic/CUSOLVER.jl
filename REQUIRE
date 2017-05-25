@@ -1,4 +1,5 @@
 julia 0.5
-CUDArt
-CUBLAS
-CUSPARSE
+Compat 0.18.0
+CUDArt 0.3.0
+CUBLAS 0.0.2
+CUSPARSE 0.6.0
