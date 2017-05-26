@@ -97,7 +97,7 @@ n = 10
         @test num <= n
         A     = sparse(rand(celty,m,n))
         d_A   = CudaSparseMatrixCSR(A)
-        @test_throws DimensionMismatch CUSOLVER.csreigs(A,convert(celty,complex(-100,-100)),convert(elty,complex(c100,100)),'O')
+        @test_throws DimensionMismatch CUSOLVER.csreigs(A,convert(celty,complex(-100,-100)),convert(celty,complex(100,100)),'O')
     end
     @testset "csrlsqvqr!" begin
         A = sparse(rand(elty,n,n))
