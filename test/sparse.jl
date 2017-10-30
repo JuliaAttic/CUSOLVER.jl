@@ -1,5 +1,5 @@
 using CUSOLVER
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 import CUSPARSE: CudaSparseMatrixCSR
@@ -30,12 +30,12 @@ n = 10
         A     = sparse(rand(elty,n,n))
         d_A   = CudaSparseMatrixCSR(A)
         b     = rand(elty,n)
-        d_b   = CudaArray(b)
+        d_b   = CuArray(b)
         x     = zeros(elty,n)
-        d_x   = CudaArray(x)
+        d_x   = CuArray(x)
         tol   = convert(real(elty),1e-4)
         d_x   = CUSOLVER.csrlsvqr!(d_A,d_b,d_x,tol,one(Cint),'O')
-        h_x   = to_host(d_x)
+        h_x   = collect(d_x)
         @test h_x ≈ full(A)\b
         A     = sparse(rand(elty,m,n))
         d_A   = CudaSparseMatrixCSR(A)
@@ -54,20 +54,20 @@ n = 10
         A     = sparse(A*A') #posdef
         d_A   = CudaSparseMatrixCSR(A)
         b     = rand(elty,n)
-        d_b   = CudaArray(b)
+        d_b   = CuArray(b)
         x     = zeros(elty,n)
-        d_x   = CudaArray(x)
+        d_x   = CuArray(x)
         tol   = 10^2*eps(real(elty))
         d_x   = CUSOLVER.csrlsvchol!(d_A,d_b,d_x,tol,zero(Cint),'O')
-        h_x   = to_host(d_x)
-        @test h_x ≈ full(A)\b
+        h_x   = collect(d_x)
+        @test h_x ≈ full(A)\b rtol=1e-4
         b     = rand(elty,m)
-        d_b   = CudaArray(b)
+        d_b   = CuArray(b)
         @test_throws DimensionMismatch CUSOLVER.csrlsvchol!(d_A,d_b,d_x,tol,zero(Cint),'O')
         b     = rand(elty,n)
-        d_b   = CudaArray(b)
+        d_b   = CuArray(b)
         x     = rand(elty,m)
-        d_x   = CudaArray(x)
+        d_x   = CuArray(x)
         @test_throws DimensionMismatch CUSOLVER.csrlsvchol!(d_A,d_b,d_x,tol,zero(Cint),'O')
         A     = sparse(rand(elty,m,n))
         d_A   = CudaSparseMatrixCSR(A)
@@ -78,7 +78,7 @@ n = 10
         A     = sparse(rand(elty,n,n))
         d_A   = CudaSparseMatrixCSR(A)
         evs   = eigvals(full(A))
-        x_0   = CudaArray(rand(elty,n))
+        x_0   = CuArray(rand(elty,n))
         μ,x   = CUSOLVER.csreigvsi(d_A,convert(elty,evs[1]),x_0,convert(real(elty),1e-6),convert(Cint,1000),'O')
         @test μ ≈ evs[1]
         A     = sparse(rand(elty,m,n))
@@ -86,7 +86,7 @@ n = 10
         @test_throws DimensionMismatch CUSOLVER.csreigvsi(d_A,convert(elty,evs[1]),x_0,convert(real(elty),1e-6),convert(Cint,1000),'O')
         A     = sparse(rand(elty,n,n))
         d_A   = CudaSparseMatrixCSR(A)
-        x_0   = CudaArray(rand(elty,m))
+        x_0   = CuArray(rand(elty,m))
         @test_throws DimensionMismatch CUSOLVER.csreigvsi(d_A,convert(elty,evs[1]),x_0,convert(real(elty),1e-6),convert(Cint,1000),'O')
     end
     @testset "csreigs" begin

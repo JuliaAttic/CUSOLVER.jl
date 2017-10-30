@@ -1,7 +1,8 @@
 module CUSOLVER
 
-using CUDArt
-using CUDArt.rt.cudaStream_t
+using CUDAdrv
+const cudaStream_t = Ptr{Void}
+CuVecOrMat{T} = Union{CuVector{T},CuMatrix{T}}
 
 import Base.one
 import Base.zero

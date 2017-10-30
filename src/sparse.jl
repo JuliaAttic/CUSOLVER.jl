@@ -48,8 +48,8 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvqr, :Float32, :Float32),
                              (:cusolverSpZcsrlsvqr, :Complex128, Float64))
     @eval begin
         function csrlsvqr!(A::CudaSparseMatrixCSR{$elty},
-                           b::CudaVector{$elty},
-                           x::CudaVector{$elty},
+                           b::CuVector{$elty},
+                           x::CuVector{$elty},
                            tol::$relty,
                            reorder::Cint,
                            inda::SparseChar)
@@ -88,8 +88,8 @@ for (fname, elty, relty) in ((:cusolverSpScsrlsvchol, :Float32, :Float32),
                              (:cusolverSpZcsrlsvchol, :Complex128, Float64))
     @eval begin
         function csrlsvchol!(A::CudaSparseMatrixCSR{$elty},
-                             b::CudaVector{$elty},
-                             x::CudaVector{$elty},
+                             b::CuVector{$elty},
+                             x::CuVector{$elty},
                              tol::$relty,
                              reorder::Cint,
                              inda::SparseChar)
@@ -171,7 +171,7 @@ for (fname, elty, relty) in ((:cusolverSpScsreigvsi, :Float32, :Float32),
     @eval begin
         function csreigvsi(A::CudaSparseMatrixCSR{$elty},
                            μ_0::$elty,
-                           x_0::CudaVector{$elty},
+                           x_0::CuVector{$elty},
                            tol::$relty,
                            maxite::Cint,
                            inda::SparseChar)
@@ -185,7 +185,7 @@ for (fname, elty, relty) in ((:cusolverSpScsreigvsi, :Float32, :Float32),
             end
             cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
             x       = copy(x_0) 
-            μ       = CudaArray(zeros($elty,1)) 
+            μ       = CuArray(zeros($elty,1)) 
             statuscheck(ccall(($(string(fname)),libcusolver), cusolverStatus_t,
                               (cusolverSpHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -193,7 +193,7 @@ for (fname, elty, relty) in ((:cusolverSpScsreigvsi, :Float32, :Float32),
                                $relty, Ptr{$elty}, Ptr{$elty}),
                               cusolverSphandle[1], n, A.nnz, &cudesca, A.nzVal,
                               A.rowPtr, A.colVal, μ_0, x_0, maxite, tol, μ, x))
-            to_host(μ)[1], x
+            collect(μ)[1], x
         end
     end
 end
