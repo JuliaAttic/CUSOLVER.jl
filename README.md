@@ -1,3 +1,7 @@
+## This package is deprecated.
+
+CUSOLVER integration is available directly in [CuArrays.jl](https://github.com/JuliaGPU/CuArrays.jl).
+
 # CUSOLVER
 
 **Build status**: [![][buildbot-julia05-img]][buildbot-julia05-url] [![][buildbot-julia06-img]][buildbot-julia06-url]
